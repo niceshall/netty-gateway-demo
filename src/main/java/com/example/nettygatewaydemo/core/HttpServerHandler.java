@@ -9,8 +9,6 @@ import io.netty.handler.codec.http.websocketx.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_CHANNEL_KEEP_ALIVE;
-
 
 public class HttpServerHandler extends SimpleChannelInboundHandler {
 
@@ -19,22 +17,38 @@ public class HttpServerHandler extends SimpleChannelInboundHandler {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel outboundChannel = ChannelUtils.getExistOrNewOutboundChannel(ctx);
+        if (outboundChannel == null) {
+            logger.error("outboundChannel is null");
+            if (msg instanceof HttpContent) {
+                ctx.writeAndFlush(((HttpContent) msg).retain());
+            }
+            return;
+        }
         if (msg instanceof HttpContent) {
             if (msg instanceof LastHttpContent) {
-                ChannelFuture channelFuture = outboundChannel.writeAndFlush(((HttpContent) msg).retain());
+                // 已聚合http请求
+                if (msg instanceof FullHttpRequest) {
+                    HttpRequest request = (HttpRequest) msg;
+                    HttpHeaders headers = request.headers();
+                    boolean websocketUpgrade = WsUtils.isWebsocketUpgrade(headers);
+                    if (websocketUpgrade) {
+                        logger.info("websocket upgrade");
+                        logger.info("request uri: {}", request.uri());
+                        String fullRemoteUri = request.getUri();
+                        if (WsUtils.wsServerHandshakeWithClient(ctx, request, fullRemoteUri, outboundChannel)) return;
+                    }
+
+                    boolean keepAlive = HttpUtil.isKeepAlive(request);
+                    if (keepAlive) {
+                        request.headers().set("connection", "keep-alive");
+                    }
+                }
+                outboundChannel.writeAndFlush(((HttpContent) msg).retain());
             } else {
                 outboundChannel.writeAndFlush(((HttpContent)msg).retain());
             }
         } else if (msg instanceof HttpRequest) {
             HttpRequest request = (HttpRequest) msg;
-            HttpHeaders headers = request.headers();
-            boolean websocketUpgrade = WsUtils.isWebsocketUpgrade(headers);
-            if (websocketUpgrade) {
-                logger.info("websocket upgrade");
-                logger.info("request uri: {}", request.uri());
-                String fullRemoteUri = request.getUri();
-                if (WsUtils.wsServerHandshakeWithClient(ctx, request, fullRemoteUri, outboundChannel)) return;
-            }
 
             boolean keepAlive = HttpUtil.isKeepAlive(request);
             if (keepAlive) {
@@ -43,6 +57,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler {
             outboundChannel.writeAndFlush(msg);
         }
 
+        // 处理websocket
         if (msg instanceof TextWebSocketFrame) {
             TextWebSocketFrame textWebSocketFrame = (TextWebSocketFrame) msg;
             logger.info("text, {}", textWebSocketFrame.text());

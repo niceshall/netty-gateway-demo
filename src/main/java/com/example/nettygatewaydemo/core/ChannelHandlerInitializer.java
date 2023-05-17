@@ -8,8 +8,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
@@ -17,7 +15,7 @@ import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 public class ChannelHandlerInitializer extends ChannelInitializer<SocketChannel> {
 
     // eventLoopGroup for server connect to backend server
-    private EventLoopGroup clientGroup = new NioEventLoopGroup();
+    private EventLoopGroup clientGroup = new NioEventLoopGroup(4);
 
     private static int taskGroupCoreSize;
 
@@ -41,12 +39,10 @@ public class ChannelHandlerInitializer extends ChannelInitializer<SocketChannel>
         pipeline.addLast(new HttpServerCodec());
         // 打印详细日志
         // pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-        // pipeline.addLast(new ChunkedWriteHandler());
-        // 3. 自定义处理器;
-        // pipeline.addLast(new TestChannelHandler());
-        HttpObjectAggregator httpObjectAggregator = new HttpObjectAggregator(1022 * 1024 * 10);
-        pipeline.addLast("queuingDecoderChunked", new QueuingDecoderChunked(clientGroup, httpObjectAggregator));
-        pipeline.addLast(new HttpServerHandler());
+        HttpObjectAggregator httpObjectAggregator = new HttpObjectAggregator(1024 * 1024 * 10);
+        HttpObjectAggregator clientHttpObjectAggregator = new HttpObjectAggregator(1024 * 1024 * 10);
+        pipeline.addLast("queuingDecoderChunked", new SimpleChunkedDecoder(clientGroup, httpObjectAggregator, clientHttpObjectAggregator));
+        pipeline.addLast(workExecutor, new HttpServerHandler());
         // pipeline.addLast(workExecutor, new HttpServerInboundHandler());
 
     }

@@ -16,7 +16,7 @@ public class AttrKeyConstants {
     public static final AttributeKey<Channel> CLIENT_CHANNEL =
             AttributeKey.valueOf(Channel.class, "CLIENT_CHANNEL");
 
-    public static final AttributeKey<Boolean> CLIENT_CHANNEL_KEEP_ALIVE =
-            AttributeKey.valueOf(Boolean.class, "CLIENT_CHANNEL_KEEP_ALIVE");
+    public static final AttributeKey<Boolean> CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED =
+            AttributeKey.valueOf(Boolean.class, "CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED");
 
 }

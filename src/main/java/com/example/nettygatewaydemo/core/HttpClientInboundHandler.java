@@ -35,17 +35,33 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof FullHttpMessage) {
-            inboundChannel.writeAndFlush(((FullHttpMessage)msg).retain()).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        // was able to flush out data, start to read the next chunk
-
-                    } else {
-                        future.channel().close();
+            FullHttpResponse fullHttpResponse = (FullHttpResponse) msg;
+            if (Objects.equals(fullHttpResponse.status(), HttpResponseStatus.SWITCHING_PROTOCOLS)) {
+                WebSocketClientHandshaker webSocketClientHandshaker = ctx.channel().attr(CLIENT_HANDSHAKER_ATTR_KEY).get();
+                if (!webSocketClientHandshaker.isHandshakeComplete()) {
+                    try {
+                        webSocketClientHandshaker.finishHandshake(ctx.channel(), fullHttpResponse);
+                        logger.info("WebSocket Client connected!");
+                        ((ChannelPromise) this.handshakeFuture()).setSuccess();
+                    } catch (WebSocketHandshakeException e) {
+                        logger.info("WebSocket Client failed to connect");
+                        ((ChannelPromise) this.handshakeFuture()).setFailure(e);
                     }
+                    // return;
                 }
-            });
+            } else {
+                inboundChannel.writeAndFlush(((FullHttpMessage)msg).retain()).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) {
+                        if (future.isSuccess()) {
+                            // was able to flush out data, start to read the next chunk
+
+                        } else {
+                            future.channel().close();
+                        }
+                    }
+                });
+            }
         }
         else if (msg instanceof WebSocketFrame) {
             logger.info("收到websocket消息");
