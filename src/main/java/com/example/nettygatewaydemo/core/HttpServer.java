@@ -11,6 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
+/**
+ * @description: http服务器
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 public class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);

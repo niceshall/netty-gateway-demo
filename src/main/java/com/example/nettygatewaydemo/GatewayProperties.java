@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.List;
 
+/**
+ * @description: 网关配置类
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 @Component
 @ConfigurationProperties(GatewayProperties.PREFIX)
 public class GatewayProperties {

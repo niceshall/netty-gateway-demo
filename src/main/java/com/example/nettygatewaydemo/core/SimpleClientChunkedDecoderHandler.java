@@ -1,33 +1,38 @@
 package com.example.nettygatewaydemo.core;
 
 
+import com.example.nettygatewaydemo.netty.UnReleaseMessageToMessageDecoder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED;
 
-public class SimpleClientChunkedDecoder extends ChunkedMessageToMessageDecoder<Object> {
+/**
+ * @description: http客户端处理器
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
+public class SimpleClientChunkedDecoderHandler extends UnReleaseMessageToMessageDecoder<Object> {
 
-    private final static Logger logger = LoggerFactory.getLogger(SimpleClientChunkedDecoder.class);
+    private final static Logger logger = LoggerFactory.getLogger(SimpleClientChunkedDecoderHandler.class);
 
     private HttpObjectAggregator httpObjectAggregator;
 
-    public SimpleClientChunkedDecoder(HttpObjectAggregator httpObjectAggregator) {
+    public SimpleClientChunkedDecoderHandler(HttpObjectAggregator httpObjectAggregator) {
         this.httpObjectAggregator = httpObjectAggregator;
     }
 
-    // private final Queue<Object> messageQueue = new ArrayDeque<>();
     private boolean processingMessage = false;
 
     /**
-     *
-     * @param ctx           the {@link ChannelHandlerContext} which this {@link io.netty.handler.codec.MessageToMessageDecoder} belongs to
-     * @param msg           the message to decode to an other one
-     * @param out           the {@link List} to which decoded messages should be added
+     * @param ctx the {@link ChannelHandlerContext} which this {@link io.netty.handler.codec.MessageToMessageDecoder} belongs to
+     * @param msg the message to decode to an other one
+     * @param out the {@link List} to which decoded messages should be added
      * @throws Exception
      */
     @Override
@@ -55,14 +60,11 @@ public class SimpleClientChunkedDecoder extends ChunkedMessageToMessageDecoder<O
                     processingMessage = true;
                 } else {
                     // Pass data on to input
-                    // out.add(msg);
                     httpObjectAggregator.channelRead(ctx, msg);
-                    // ctx.pipeline().
                 }
             } else if (msg instanceof WebSocketFrame) {
                 out.add(msg);
             } else {
-                // out.add(msg);
                 httpObjectAggregator.channelRead(ctx, msg);
             }
         }

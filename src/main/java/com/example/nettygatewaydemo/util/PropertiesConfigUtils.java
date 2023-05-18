@@ -8,6 +8,9 @@ import org.springframework.core.env.StandardEnvironment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+/**
+ * @description: properties配置工具类
+ */
 @Component
 public class PropertiesConfigUtils implements EnvironmentAware, ApplicationContextAware {
     private static ApplicationContext localApplicationContext;
