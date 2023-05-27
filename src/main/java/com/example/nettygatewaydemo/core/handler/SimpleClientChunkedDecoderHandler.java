@@ -1,7 +1,8 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.core.handler;
 
 
 import com.example.nettygatewaydemo.netty.UnReleaseMessageToMessageDecoder;
+import com.example.nettygatewaydemo.util.AttrKeyConstants;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
@@ -9,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-
-import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED;
 
 /**
  * @description: http客户端处理器
@@ -52,7 +51,7 @@ public class SimpleClientChunkedDecoderHandler extends UnReleaseMessageToMessage
         } else {
 
             if (msg instanceof HttpResponse) {
-                Boolean aBoolean = ctx.channel().attr(CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).get();
+                Boolean aBoolean = ctx.channel().attr(AttrKeyConstants.CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).get();
                 if (aBoolean) {
                     // Pass data on to input
                     out.add(msg);

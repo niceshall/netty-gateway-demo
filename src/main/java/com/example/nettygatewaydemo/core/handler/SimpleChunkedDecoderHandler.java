@@ -1,12 +1,14 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.core.handler;
 
 import com.example.nettygatewaydemo.GatewayProperties;
 import com.example.nettygatewaydemo.netty.UnReleaseMessageToMessageDecoder;
+import com.example.nettygatewaydemo.util.AttrKeyConstants;
 import com.example.nettygatewaydemo.util.ChannelUtils;
-import com.example.nettygatewaydemo.util.SpringContextHolder;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,16 +25,11 @@ public class SimpleChunkedDecoderHandler extends UnReleaseMessageToMessageDecode
 
     private GatewayProperties gatewayProperties;
 
-    private EventLoopGroup clientGroup;
-
     private HttpObjectAggregator httpObjectAggregator;
-    private HttpObjectAggregator clientHttpObjectAggregator;
 
-    public SimpleChunkedDecoderHandler(GatewayProperties gatewayProperties, EventLoopGroup clientGroup, HttpObjectAggregator httpObjectAggregator, HttpObjectAggregator clientHttpObjectAggregator) {
+    public SimpleChunkedDecoderHandler(GatewayProperties gatewayProperties, HttpObjectAggregator httpObjectAggregator) {
         this.gatewayProperties = gatewayProperties;
-        this.clientGroup = clientGroup;
         this.httpObjectAggregator = httpObjectAggregator;
-        this.clientHttpObjectAggregator = clientHttpObjectAggregator;
     }
 
     private boolean processingMessage = false;
@@ -57,16 +54,18 @@ public class SimpleChunkedDecoderHandler extends UnReleaseMessageToMessageDecode
         } else {
 
             if (msg instanceof HttpRequest) {
-                ChannelUtils.handleHttpRequest(ctx, msg, gatewayProperties, clientGroup, clientHttpObjectAggregator);
                 HttpRequest request = (HttpRequest) msg;
                 String contentTypeStr = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
                 boolean isMultipart = contentTypeStr != null && contentTypeStr.contains(HttpHeaders.Values.MULTIPART_FORM_DATA);
                 if (isMultipart) {
+                    ctx.channel().config().setAutoRead(false);
+                    ChannelUtils.handleHttpRequest(ctx, msg, gatewayProperties);
                     // Pass data on to input
                     out.add(msg);
                     // Prevent processing of new messages
                     processingMessage = true;
                 } else {
+                    ChannelUtils.handleHttpRequest(ctx, msg, gatewayProperties);
                     // Pass data on to input
                     httpObjectAggregator.channelRead(ctx, msg);
                 }

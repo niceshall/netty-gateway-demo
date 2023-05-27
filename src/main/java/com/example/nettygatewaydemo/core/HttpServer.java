@@ -1,5 +1,6 @@
 package com.example.nettygatewaydemo.core;
 
+import com.example.nettygatewaydemo.core.handler.ChannelHandlerInitializer;
 import com.example.nettygatewaydemo.util.PropertiesConfigUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;

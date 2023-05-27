@@ -1,9 +1,11 @@
 package com.example.nettygatewaydemo.util;
 
 import io.netty.channel.Channel;
+import io.netty.channel.pool.SimpleChannelPool;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.Future;
 
 /**
  * @description: channel属性key常量
@@ -22,6 +24,15 @@ public class AttrKeyConstants {
     // 服务器端与后端服务连接生成的channel
     public static final AttributeKey<Channel> CLIENT_CHANNEL =
             AttributeKey.valueOf(Channel.class, "CLIENT_CHANNEL");
+
+    // 服务器端与后端服务连接生成的channel
+    public static final AttributeKey<Channel> SERVER_CHANNEL =
+            AttributeKey.valueOf(Channel.class, "SERVER_CHANNEL");
+
+    public static final AttributeKey<Future<Channel>> CLIENT_CHANNEL_F =
+            AttributeKey.valueOf(Future.class, "SERVER_CHANNEL");
+
+    public static final AttributeKey<SimpleChannelPool> CLIENT_POOL = AttributeKey.newInstance("clientPool");
 
     // 服务器端与后端服务是否支持transfer-encoding:chunked
     public static final AttributeKey<Boolean> CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED =

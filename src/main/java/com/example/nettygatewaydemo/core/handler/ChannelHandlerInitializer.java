@@ -1,15 +1,14 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.core.handler;
 
 import com.example.nettygatewaydemo.GatewayProperties;
 import com.example.nettygatewaydemo.util.PropertiesConfigUtils;
 import com.example.nettygatewaydemo.util.SpringContextHolder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.flow.FlowControlHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
@@ -20,9 +19,6 @@ import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
  * @version: 1.0
  */
 public class ChannelHandlerInitializer extends ChannelInitializer<SocketChannel> {
-
-    // eventLoopGroup for server connect to backend server
-    private EventLoopGroup clientGroup = new NioEventLoopGroup(4);
 
     private static int taskGroupCoreSize;
 
@@ -50,10 +46,9 @@ public class ChannelHandlerInitializer extends ChannelInitializer<SocketChannel>
         // 打印详细日志
         // pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         HttpObjectAggregator httpObjectAggregator = new HttpObjectAggregator(1024 * 1024 * 10);
-        HttpObjectAggregator clientHttpObjectAggregator = new HttpObjectAggregator(1024 * 1024 * 10);
-        pipeline.addLast("queuingDecoderChunked", new SimpleChunkedDecoderHandler(gatewayProperties, clientGroup, httpObjectAggregator, clientHttpObjectAggregator));
+        pipeline.addLast(new FlowControlHandler());
+        pipeline.addLast("queuingDecoderChunked", new SimpleChunkedDecoderHandler(gatewayProperties, httpObjectAggregator));
         pipeline.addLast(workExecutor, new HttpServerHandler());
-        // pipeline.addLast(workExecutor, new HttpServerInboundHandler());
 
     }
 }

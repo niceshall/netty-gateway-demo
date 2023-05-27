@@ -1,15 +1,15 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.core.handler;
 
+import com.example.nettygatewaydemo.util.AttrKeyConstants;
 import com.example.nettygatewaydemo.util.ChannelUtils;
 import io.netty.channel.*;
+import io.netty.channel.pool.SimpleChannelPool;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
-
-import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_HANDSHAKER_ATTR_KEY;
 
 /**
  * @description: http客户端处理器
@@ -19,12 +19,6 @@ import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_HANDSHAK
 public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
 
     private final static Logger logger = LoggerFactory.getLogger(HttpClientInboundHandler.class);
-
-    private Channel serverChannel;
-
-    public HttpClientInboundHandler(Channel serverChannel) {
-        this.serverChannel = serverChannel;
-    }
 
     private ChannelPromise handshakeFuture;
 
@@ -39,10 +33,11 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+        Channel serverChannel = ctx.channel().attr(AttrKeyConstants.SERVER_CHANNEL).get();
         if (msg instanceof FullHttpMessage) {
             FullHttpResponse fullHttpResponse = (FullHttpResponse) msg;
             if (Objects.equals(fullHttpResponse.status(), HttpResponseStatus.SWITCHING_PROTOCOLS)) {
-                WebSocketClientHandshaker webSocketClientHandshaker = ctx.channel().attr(CLIENT_HANDSHAKER_ATTR_KEY).get();
+                WebSocketClientHandshaker webSocketClientHandshaker = ctx.channel().attr(AttrKeyConstants.CLIENT_HANDSHAKER_ATTR_KEY).get();
                 if (!webSocketClientHandshaker.isHandshakeComplete()) {
                     try {
                         webSocketClientHandshaker.finishHandshake(ctx.channel(), fullHttpResponse);
@@ -58,7 +53,8 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
                     @Override
                     public void operationComplete(ChannelFuture future) {
                         if (future.isSuccess()) {
-
+                            SimpleChannelPool simpleChannelPool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
+                            simpleChannelPool.release(ctx.channel());
                         } else {
                             future.channel().close();
                         }
@@ -86,6 +82,8 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
                             if (future.isSuccess()) {
                                 logger.info("client write success");
                                 // was able to flush out data, start to read the next chunk
+                                SimpleChannelPool simpleChannelPool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
+                                simpleChannelPool.release(ctx.channel());
                             } else {
                                 future.channel().close();
                             }
@@ -110,6 +108,7 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
+        Channel serverChannel = ctx.channel().attr(AttrKeyConstants.SERVER_CHANNEL).get();
         if (serverChannel != null) {
             logger.info("关闭serverChannel");
             ChannelUtils.closeOnFlush(serverChannel);
@@ -120,6 +119,7 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("exceptionCaught", cause);
+        Channel serverChannel = ctx.channel().attr(AttrKeyConstants.SERVER_CHANNEL).get();
         ChannelUtils.closeOnFlush(serverChannel);
         ChannelUtils.closeOnFlush(ctx.channel());
     }

@@ -1,17 +1,16 @@
 package com.example.nettygatewaydemo.util;
 
 import com.example.nettygatewaydemo.GatewayProperties;
-import com.example.nettygatewaydemo.core.HttpClientInboundHandler;
-import com.example.nettygatewaydemo.core.HttpClientFactory;
+import com.example.nettygatewaydemo.core.HttpClient;
+import com.example.nettygatewaydemo.core.NettyClientHttpRequest;
 import com.example.nettygatewaydemo.model.RouteDefine;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpUtil;
+import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -45,23 +44,13 @@ public class ChannelUtils {
         return connectedClientChannel;
     }
 
-    public static Channel getExistOrNewClientChannel(ChannelHandlerContext ctx, String remoteHost, int remotePort, EventLoopGroup clientGroup, boolean isKeepAlive, boolean transferEncodingChunked, HttpObjectAggregator clienHttpObjectAggregator) throws URISyntaxException, InterruptedException {
-        Channel connectedClientChannel = ctx.channel().attr(CLIENT_CHANNEL).get();
-        if (connectedClientChannel != null || remoteHost == null || remotePort == 0) {
-            logger.info("get exist client channel");
-            connectedClientChannel.attr(CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).set(transferEncodingChunked);
-            return connectedClientChannel;
-        } else {
-            logger.info("create new client channel");
-        }
-        HttpClientInboundHandler httpClientInboundHd = new HttpClientInboundHandler(ctx.channel());
-        Channel channel = HttpClientFactory.getClientChannel(remoteHost, remotePort, ctx.channel(), httpClientInboundHd, clientGroup, clienHttpObjectAggregator);
-        channel.attr(CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).set(transferEncodingChunked);
-        ctx.channel().attr(CLIENT_CHANNEL).set(channel);
-        return channel;
+    public static Future<Channel> getExistOrNewClientChannel(ChannelHandlerContext ctx, String remoteHost, int remotePort, boolean transferEncodingChunked, RouteDefine routeDefine) throws URISyntaxException, InterruptedException {
+        URI uri = new URI("http://" + remoteHost + ":" + remotePort);
+        NettyClientHttpRequest nettyClientHttpRequest = new NettyClientHttpRequest(routeDefine, uri, null);
+        return HttpClient.getClientChannel(nettyClientHttpRequest, ctx.channel(), transferEncodingChunked, ctx);
     }
 
-    public static void handleHttpRequest(ChannelHandlerContext ctx, Object msg, GatewayProperties gatewayProperties, EventLoopGroup clientGroup, HttpObjectAggregator clientHttpObjectAggregator) throws URISyntaxException, InterruptedException {
+    public static void handleHttpRequest(ChannelHandlerContext ctx, Object msg, GatewayProperties gatewayProperties) throws URISyntaxException, InterruptedException {
         HttpRequest request = (HttpRequest) msg;
 
         // 1. 获取路由信息
@@ -103,7 +92,7 @@ public class ChannelUtils {
 
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         boolean transferEncodingChunked = HttpUtil.isTransferEncodingChunked(request);
-        ChannelUtils.getExistOrNewClientChannel(ctx, host, port, clientGroup, keepAlive, transferEncodingChunked, clientHttpObjectAggregator);
+        ChannelUtils.getExistOrNewClientChannel(ctx, host, port, transferEncodingChunked, routeDefine);
 
     }
 
