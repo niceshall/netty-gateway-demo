@@ -16,6 +16,11 @@ import java.net.URISyntaxException;
 import static com.example.nettygatewaydemo.util.AttrKeyConstants.CLIENT_HANDSHAKER_ATTR_KEY;
 import static com.example.nettygatewaydemo.util.AttrKeyConstants.HANDSHAKER_ATTR_KEY;
 
+/**
+ * @description: websocket工具类
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 public class WsUtils {
 
     private final static Logger logger = LoggerFactory.getLogger(WsUtils.class);
@@ -88,6 +93,11 @@ public class WsUtils {
         }
     }
 
+    /**
+     * 判断是否是websocket升级请求
+     * @param headers
+     * @return
+     */
     public static boolean isWebsocketUpgrade(HttpHeaders headers) {
         //this contains check does not allocate an iterator, and most requests are not upgrades
         //so we do the contains check first before checking for specific values

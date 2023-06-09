@@ -1,4 +1,4 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.netty;
 
 import io.netty.util.concurrent.FastThreadLocal;
 import io.netty.util.internal.MathUtil;
@@ -8,6 +8,11 @@ import java.util.RandomAccess;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * @description:
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 final class OutputList extends AbstractList<Object> implements RandomAccess {
 
     private static final OutputList.CodecOutputListRecycler NOOP_RECYCLER = new OutputList.CodecOutputListRecycler() {
@@ -108,7 +113,7 @@ final class OutputList extends AbstractList<Object> implements RandomAccess {
             expandArray();
             insert(size, element);
         }
-        ++ size;
+        ++size;
         return true;
     }
 
@@ -136,7 +141,7 @@ final class OutputList extends AbstractList<Object> implements RandomAccess {
         }
 
         insert(index, element);
-        ++ size;
+        ++size;
     }
 
     @Override
@@ -148,7 +153,7 @@ final class OutputList extends AbstractList<Object> implements RandomAccess {
         if (len > 0) {
             System.arraycopy(array, index + 1, array, index, len);
         }
-        array[-- size] = null;
+        array[--size] = null;
 
         return old;
     }
@@ -171,7 +176,7 @@ final class OutputList extends AbstractList<Object> implements RandomAccess {
      * Recycle the array which will clear it and null out all entries in the internal storage.
      */
     void recycle() {
-        for (int i = 0 ; i < size; i ++) {
+        for (int i = 0; i < size; i++) {
             array[i] = null;
         }
         size = 0;

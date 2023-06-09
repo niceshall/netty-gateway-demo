@@ -1,4 +1,4 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -9,23 +9,28 @@ import io.netty.util.internal.TypeParameterMatcher;
 
 import java.util.List;
 
-public abstract class ChunkedMessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter {
+/**
+ * @description: 不释放引用的消息到消息解码器
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
+public abstract class UnReleaseMessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter {
 
     private final TypeParameterMatcher matcher;
 
     /**
      * Create a new instance which will try to detect the types to match out of the type parameter of the class.
      */
-    protected ChunkedMessageToMessageDecoder() {
-        matcher = TypeParameterMatcher.find(this, ChunkedMessageToMessageDecoder.class, "I");
+    protected UnReleaseMessageToMessageDecoder() {
+        matcher = TypeParameterMatcher.find(this, UnReleaseMessageToMessageDecoder.class, "I");
     }
 
     /**
      * Create a new instance
      *
-     * @param inboundMessageType    The type of messages to match and so decode
+     * @param inboundMessageType The type of messages to match and so decode
      */
-    protected ChunkedMessageToMessageDecoder(Class<? extends I> inboundMessageType) {
+    protected UnReleaseMessageToMessageDecoder(Class<? extends I> inboundMessageType) {
         matcher = TypeParameterMatcher.get(inboundMessageType);
     }
 
@@ -72,10 +77,10 @@ public abstract class ChunkedMessageToMessageDecoder<I> extends ChannelInboundHa
      * Decode from one message to an other. This method will be called for each written message that can be handled
      * by this decoder.
      *
-     * @param ctx           the {@link ChannelHandlerContext} which this {@link io.netty.handler.codec.MessageToMessageDecoder} belongs to
-     * @param msg           the message to decode to an other one
-     * @param out           the {@link List} to which decoded messages should be added
-     * @throws Exception    is thrown if an error occurs
+     * @param ctx the {@link ChannelHandlerContext} which this {@link io.netty.handler.codec.MessageToMessageDecoder} belongs to
+     * @param msg the message to decode to an other one
+     * @param out the {@link List} to which decoded messages should be added
+     * @throws Exception is thrown if an error occurs
      */
     protected abstract void decode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;
 }

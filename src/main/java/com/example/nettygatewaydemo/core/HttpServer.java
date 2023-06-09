@@ -1,5 +1,6 @@
 package com.example.nettygatewaydemo.core;
 
+import com.example.nettygatewaydemo.core.handler.ChannelHandlerInitializer;
 import com.example.nettygatewaydemo.util.PropertiesConfigUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -11,6 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
+/**
+ * @description: http服务器
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 public class HttpServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
@@ -30,9 +36,9 @@ public class HttpServer {
     }
 
     private void initEventLoopGroup() {
-        // bossGroup 用于接收连接 设置线程数为4
+        // bossGroup 用于接收连接 设置线程数为1
         // workerGroup 用于处理连接 不设置线程数 默认为cpu核数*2
-        bossGroup = new NioEventLoopGroup(1);
+        bossGroup = new NioEventLoopGroup(4);
         workerGroup = new NioEventLoopGroup();
         logger.info("bossGroup and workerGroup init success");
     }
@@ -53,7 +59,7 @@ public class HttpServer {
                     .channel(NioServerSocketChannel.class)
                     .localAddress(new InetSocketAddress(this.portHTTP))
                     .option(ChannelOption.SO_BACKLOG, 1024) // 设置TCP缓冲区
-                    .option(ChannelOption.RCVBUF_ALLOCATOR, AdaptiveRecvByteBufAllocator.DEFAULT) // 设置接收缓冲区大小
+                    .option(ChannelOption.RCVBUF_ALLOCATOR, AdaptiveRecvByteBufAllocator.DEFAULT) // 设置接收缓冲区大小,默认值为AdaptiveRecvByteBufAllocator.DEFAULT
                     .childOption(ChannelOption.TCP_NODELAY, true) // 设置不延迟，消息立即发送
                     .childOption(ChannelOption.SO_RCVBUF, childOptionBuffSize) // 设置接收缓冲区大小
                     .childOption(ChannelOption.SO_SNDBUF, childOptionBuffSize) // 设置发送缓冲区大小

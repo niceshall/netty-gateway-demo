@@ -1,5 +1,10 @@
 package com.example.nettygatewaydemo.model;
 
+/**
+ * @description: 路由定义
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
+ */
 public class RouteDefine {
 
     private String id;

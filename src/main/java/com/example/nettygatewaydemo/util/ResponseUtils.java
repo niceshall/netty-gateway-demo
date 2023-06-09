@@ -1,6 +1,9 @@
 package com.example.nettygatewaydemo.util;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 
@@ -11,7 +14,9 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 /**
- * @author lw
+ * @description: response工具类
+ * @create: 2022/5/11 10:34:00
+ * @version: 1.0
  */
 public class ResponseUtils {
 
@@ -59,5 +64,15 @@ public class ResponseUtils {
                 .setInt(CONTENT_LENGTH, response.content().readableBytes());
         response.headers().set(CONNECTION, CLOSE);
         return response;
+    }
+
+    public static void responseNotFound(ChannelHandlerContext ctx, HttpRequest request) {
+        FullHttpResponse fullHttpResponse = ResponseUtils.creat404(request);
+        ctx.writeAndFlush(fullHttpResponse.retain()).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                ChannelUtils.closeOnFlush(ctx.channel());
+            }
+        });
     }
 }
