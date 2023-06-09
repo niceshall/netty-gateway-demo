@@ -1,6 +1,7 @@
 package com.example.nettygatewaydemo.core;
 
 import com.example.nettygatewaydemo.core.handler.NettyClientPoolHandler;
+import com.example.nettygatewaydemo.core.request.NettyClientHttpRequest;
 import com.example.nettygatewaydemo.util.AttrKeyConstants;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;

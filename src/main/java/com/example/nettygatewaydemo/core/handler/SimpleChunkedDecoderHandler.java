@@ -2,13 +2,10 @@ package com.example.nettygatewaydemo.core.handler;
 
 import com.example.nettygatewaydemo.GatewayProperties;
 import com.example.nettygatewaydemo.netty.UnReleaseMessageToMessageDecoder;
-import com.example.nettygatewaydemo.util.AttrKeyConstants;
 import com.example.nettygatewaydemo.util.ChannelUtils;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

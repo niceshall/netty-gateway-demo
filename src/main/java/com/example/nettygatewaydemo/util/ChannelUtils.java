@@ -2,7 +2,7 @@ package com.example.nettygatewaydemo.util;
 
 import com.example.nettygatewaydemo.GatewayProperties;
 import com.example.nettygatewaydemo.core.HttpClient;
-import com.example.nettygatewaydemo.core.NettyClientHttpRequest;
+import com.example.nettygatewaydemo.core.request.NettyClientHttpRequest;
 import com.example.nettygatewaydemo.model.RouteDefine;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -44,8 +44,7 @@ public class ChannelUtils {
         return connectedClientChannel;
     }
 
-    public static Future<Channel> getExistOrNewClientChannel(ChannelHandlerContext ctx, String remoteHost, int remotePort, boolean transferEncodingChunked, RouteDefine routeDefine) throws URISyntaxException, InterruptedException {
-        URI uri = new URI("http://" + remoteHost + ":" + remotePort);
+    public static Future<Channel> getExistOrNewClientChannel(ChannelHandlerContext ctx, URI uri, boolean transferEncodingChunked, RouteDefine routeDefine) throws URISyntaxException, InterruptedException {
         NettyClientHttpRequest nettyClientHttpRequest = new NettyClientHttpRequest(routeDefine, uri, null);
         return HttpClient.getClientChannel(nettyClientHttpRequest, ctx.channel(), transferEncodingChunked, ctx);
     }
@@ -73,6 +72,13 @@ public class ChannelUtils {
             return;
         }
         RouteDefine routeDefine = collect.get(0);
+        URI simpleRemoteUri = getUri(request, uri, split, routeDefine);
+        boolean transferEncodingChunked = HttpUtil.isTransferEncodingChunked(request);
+        ChannelUtils.getExistOrNewClientChannel(ctx, simpleRemoteUri, transferEncodingChunked, routeDefine);
+
+    }
+
+    private static URI getUri(HttpRequest request, String uri, String[] split, RouteDefine routeDefine) throws URISyntaxException {
         String remoteUriString = routeDefine.getUri();
         logger.info("remote uri = {}", remoteUriString);
         URI remoteUri = new URI(remoteUriString);
@@ -88,12 +94,10 @@ public class ChannelUtils {
         String fullRemoteUri = "http://" + host + ":" + port + path;
         String remoteHost = host + ":" + port;
 
+        URI simpleRemoteUri = new URI("http://" + remoteHost);
+
         resetNettyRequest(request, remoteHost, fullRemoteUri);
-
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        boolean transferEncodingChunked = HttpUtil.isTransferEncodingChunked(request);
-        ChannelUtils.getExistOrNewClientChannel(ctx, host, port, transferEncodingChunked, routeDefine);
-
+        return simpleRemoteUri;
     }
 
     private static void resetNettyRequest(HttpRequest request, String remoteHost, String fullRemoteUri) {
