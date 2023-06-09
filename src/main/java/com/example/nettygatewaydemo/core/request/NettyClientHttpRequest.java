@@ -1,4 +1,4 @@
-package com.example.nettygatewaydemo.core;
+package com.example.nettygatewaydemo.core.request;
 
 
 import com.example.nettygatewaydemo.model.RouteDefine;
@@ -17,8 +17,7 @@ import java.net.URL;
  * 一些开源项目选择自己定义HttpRequest和HttpResponse
  * </p>
  *
- * @author: pjmike
- * @create: 2019/12/19
+ * @create: 2022/5/19
  */
 public class NettyClientHttpRequest {
 

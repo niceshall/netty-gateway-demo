@@ -47,7 +47,7 @@ public class ChannelHandlerInitializer extends ChannelInitializer<SocketChannel>
         // pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         HttpObjectAggregator httpObjectAggregator = new HttpObjectAggregator(1024 * 1024 * 10);
         pipeline.addLast(new FlowControlHandler());
-        pipeline.addLast("queuingDecoderChunked", new SimpleChunkedDecoderHandler(gatewayProperties, httpObjectAggregator));
+        pipeline.addLast("simpleChunkedDecoderHandler", new SimpleChunkedDecoderHandler(gatewayProperties, httpObjectAggregator));
         pipeline.addLast(workExecutor, new HttpServerHandler());
 
     }

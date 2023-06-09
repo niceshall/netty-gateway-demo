@@ -37,29 +37,9 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
         if (msg instanceof FullHttpMessage) {
             FullHttpResponse fullHttpResponse = (FullHttpResponse) msg;
             if (Objects.equals(fullHttpResponse.status(), HttpResponseStatus.SWITCHING_PROTOCOLS)) {
-                WebSocketClientHandshaker webSocketClientHandshaker = ctx.channel().attr(AttrKeyConstants.CLIENT_HANDSHAKER_ATTR_KEY).get();
-                if (!webSocketClientHandshaker.isHandshakeComplete()) {
-                    try {
-                        webSocketClientHandshaker.finishHandshake(ctx.channel(), fullHttpResponse);
-                        logger.info("WebSocket Client connected!");
-                        ((ChannelPromise) this.handshakeFuture()).setSuccess();
-                    } catch (WebSocketHandshakeException e) {
-                        logger.info("WebSocket Client failed to connect");
-                        ((ChannelPromise) this.handshakeFuture()).setFailure(e);
-                    }
-                }
+                finishWebSocketClientHandshaker(ctx, fullHttpResponse);
             } else {
-                serverChannel.writeAndFlush(((FullHttpMessage) msg).retain()).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) {
-                        if (future.isSuccess()) {
-                            SimpleChannelPool simpleChannelPool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
-                            simpleChannelPool.release(ctx.channel());
-                        } else {
-                            future.channel().close();
-                        }
-                    }
-                });
+                doFinishedServerResponse(ctx, fullHttpResponse, serverChannel);
             }
         } else if (msg instanceof WebSocketFrame) {
             logger.info("收到websocket消息");
@@ -76,19 +56,7 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
         } else {
             if (msg instanceof HttpContent) {
                 if (msg instanceof LastHttpContent) {
-                    serverChannel.writeAndFlush(((HttpContent) msg).retain()).addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) {
-                            if (future.isSuccess()) {
-                                logger.info("client write success");
-                                // was able to flush out data, start to read the next chunk
-                                SimpleChannelPool simpleChannelPool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
-                                simpleChannelPool.release(ctx.channel());
-                            } else {
-                                future.channel().close();
-                            }
-                        }
-                    });
+                    doFinishedServerResponse(ctx, (HttpContent) msg, serverChannel);
                 } else {
                     serverChannel.writeAndFlush(((HttpContent) msg).retain());
                 }
@@ -97,6 +65,47 @@ public class HttpClientInboundHandler extends SimpleChannelInboundHandler {
             }
         }
 
+    }
+
+    /**
+     * 完成http客户端响应
+     * @param ctx
+     * @param msg
+     * @param serverChannel
+     */
+    private static void doFinishedServerResponse(ChannelHandlerContext ctx, HttpContent msg, Channel serverChannel) {
+        serverChannel.writeAndFlush(msg.retain()).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) {
+                if (future.isSuccess()) {
+                    logger.info("client write success");
+                    // was able to flush out data, start to read the next chunk
+                    SimpleChannelPool simpleChannelPool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
+                    simpleChannelPool.release(ctx.channel());
+                } else {
+                    future.channel().close();
+                }
+            }
+        });
+    }
+
+    /**
+     * 完成websocket客户端握手
+     * @param ctx
+     * @param fullHttpResponse
+     */
+    private void finishWebSocketClientHandshaker(ChannelHandlerContext ctx, FullHttpResponse fullHttpResponse) {
+        WebSocketClientHandshaker webSocketClientHandshaker = ctx.channel().attr(AttrKeyConstants.CLIENT_HANDSHAKER_ATTR_KEY).get();
+        if (!webSocketClientHandshaker.isHandshakeComplete()) {
+            try {
+                webSocketClientHandshaker.finishHandshake(ctx.channel(), fullHttpResponse);
+                logger.info("WebSocket Client connected!");
+                ((ChannelPromise) this.handshakeFuture()).setSuccess();
+            } catch (WebSocketHandshakeException e) {
+                logger.info("WebSocket Client failed to connect");
+                ((ChannelPromise) this.handshakeFuture()).setFailure(e);
+            }
+        }
     }
 
     @Override

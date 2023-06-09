@@ -32,44 +32,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler {
                 return;
             }
             HttpRequest request = (HttpRequest) msg;
-            boolean keepAlive = HttpUtil.isKeepAlive(request);
-            boolean transferEncodingChunked = HttpUtil.isTransferEncodingChunked(request);
-            SimpleChannelPool pool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
-            HttpHeaders headers = request.headers();
-            boolean websocketUpgrade = WsUtils.isWebsocketUpgrade(headers);
-            if (keepAlive && !websocketUpgrade) {
-                request.headers().set("connection", "keep-alive");
-            }
+            boolean websocketUpgrade = isWebsocketUpgrade(request);
             // 已聚合http请求
             if (msg instanceof FullHttpRequest) {
                 msg = ((HttpContent) msg).retain();
             }
             Object finalMsg = msg;
-            channelFuture.addListener(new FutureListener<Channel>() {
-                @Override
-                public void operationComplete(Future<Channel> future) throws Exception {
-                    ctx.channel().config().setAutoRead(true);
-                    ctx.channel().read();
-                    if (future.isSuccess()) {
-                        Channel clientChannel = future.getNow();
-                        ctx.channel().attr(AttrKeyConstants.CLIENT_CHANNEL).set(clientChannel);
-                        clientChannel.attr(AttrKeyConstants.SERVER_CHANNEL).set(ctx.channel());
-                        clientChannel.attr(AttrKeyConstants.CLIENT_POOL).set(pool);
-                        clientChannel.attr(AttrKeyConstants.CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).set(transferEncodingChunked);
-                        if (clientChannel != null) {
-                            if (websocketUpgrade) {
-                                logger.info("websocket upgrade");
-                                logger.info("request uri: {}", request.uri());
-                                String fullRemoteUri = request.getUri();
-                                if (WsUtils.wsServerHandshakeWithClient(ctx, request, fullRemoteUri, clientChannel)) return;
-                            }
-                            clientChannel.writeAndFlush(finalMsg);
-                        }
-                    } else {
-                        ctx.channel().config().setAutoRead(true);
-                    }
-                }
-            });
+            doClientRequest(ctx, channelFuture, request, websocketUpgrade, finalMsg);
             return;
         }
         if (msg instanceof HttpContent) {
@@ -99,6 +68,46 @@ public class HttpServerHandler extends SimpleChannelInboundHandler {
             ChannelUtils.closeOnFlush(clientChannel);
             return;
         }
+    }
+
+    private static boolean isWebsocketUpgrade(HttpRequest request) {
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
+        HttpHeaders headers = request.headers();
+        boolean websocketUpgrade = WsUtils.isWebsocketUpgrade(headers);
+        if (keepAlive && !websocketUpgrade) {
+            request.headers().set("connection", "keep-alive");
+        }
+        return websocketUpgrade;
+    }
+
+    private static void doClientRequest(ChannelHandlerContext ctx, Future<Channel> channelFuture, HttpRequest request, boolean websocketUpgrade, Object finalMsg) {
+        boolean transferEncodingChunked = HttpUtil.isTransferEncodingChunked(request);
+        SimpleChannelPool pool = ctx.channel().attr(AttrKeyConstants.CLIENT_POOL).get();
+        channelFuture.addListener(new FutureListener<Channel>() {
+            @Override
+            public void operationComplete(Future<Channel> future) throws Exception {
+                ctx.channel().config().setAutoRead(true);
+                ctx.channel().read();
+                if (future.isSuccess()) {
+                    Channel clientChannel = future.getNow();
+                    ctx.channel().attr(AttrKeyConstants.CLIENT_CHANNEL).set(clientChannel);
+                    clientChannel.attr(AttrKeyConstants.SERVER_CHANNEL).set(ctx.channel());
+                    clientChannel.attr(AttrKeyConstants.CLIENT_POOL).set(pool);
+                    clientChannel.attr(AttrKeyConstants.CLIENT_CHANNEL_TRANSFER_ENCODING_CHUNKED).set(transferEncodingChunked);
+                    if (clientChannel != null) {
+                        if (websocketUpgrade) {
+                            logger.info("websocket upgrade");
+                            logger.info("request uri: {}", request.uri());
+                            String fullRemoteUri = request.getUri();
+                            if (WsUtils.wsServerHandshakeWithClient(ctx, request, fullRemoteUri, clientChannel)) return;
+                        }
+                        clientChannel.writeAndFlush(finalMsg);
+                    }
+                } else {
+                    ctx.channel().config().setAutoRead(true);
+                }
+            }
+        });
     }
 
     @Override
